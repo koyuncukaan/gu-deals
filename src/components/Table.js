@@ -1,15 +1,16 @@
-import { React, useEffect, useState, useCallback } from "react";
+import { React, useEffect, useState } from "react";
 import axios from "axios";
 
 const url = "https://api.godsunchained.com/v0/proto";
-const ethURL = "https://api.x.immutable.com/v1/orders?";
+const immutableURL = "https://api.x.immutable.com/v1/orders?";
 
 function Table() {
-  const [cards, setCards] = useState([1]);
+  const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ethPrices, setEthPrices] = useState([]);
+  const [cardPrices, setCardPrices] = useState([]);
 
   const fetchTotal = async () => {
+    setLoading(true);
     try {
       let response = await axios(url);
       const total = response.data.total;
@@ -25,53 +26,94 @@ function Table() {
       console.log(error.response);
     }
   };
-  const fetchEthOrder = async (cardID) => {
-    try {
-      const response = await axios(ethURL, {
-        params: {
-          direction: "asc",
-          include_fees: "true",
-          order_by: "buy_quantity",
-          page_size: "1",
-          sell_metadata: `{"proto":["${cardID}"],"quality":["Meteorite"]}`,
-          sell_token_type: "ERC721",
-          status: "active",
-          sell_token_address: "0xacb3c6a43d15b907e8433077b6d38ae40936fe2c",
-          buy_token_type: "ETH",
-        },
-      });
-      const cardName = response.data.result[0].sell.data.properties.name;
-      const ethPrice =
-        response.data.result[0].buy.data.quantity / 1000000000000000000;
-      // console.log(`${cardName} ${ethPrice}`);
-      return { cardName, ethPrice };
-    } catch (error) {
-      console.log(error.response);
+  const axiosAll = async (cardID) => {
+    if (loading) {
+      return;
     }
+    await axios
+      .all([
+        axios.get(immutableURL, {
+          params: {
+            direction: "asc",
+            include_fees: "true",
+            order_by: "buy_quantity",
+            page_size: "1",
+            sell_metadata: `{"proto":["${cardID}"],"quality":["Meteorite"]}`,
+            sell_token_type: "ERC721",
+            status: "active",
+            sell_token_address: "0xacb3c6a43d15b907e8433077b6d38ae40936fe2c",
+            buy_token_type: "ETH",
+          },
+        }),
+        axios.get(immutableURL, {
+          params: {
+            direction: "asc",
+            include_fees: "true",
+            order_by: "buy_quantity",
+            page_size: "1",
+            sell_metadata: `{"proto":["${cardID}"],"quality":["Meteorite"]}`,
+            sell_token_type: "ERC721",
+            status: "active",
+            sell_token_address: "0xacb3c6a43d15b907e8433077b6d38ae40936fe2c",
+            buy_token_address: "0xccc8cb5229b0ac8069c51fd58367fd1e622afd97",
+          },
+        }),
+      ])
+      .then((responseArr) => {
+        const cardName =
+          responseArr[0].data.result[0].sell.data.properties.name;
+        const ethPrice =
+          responseArr[0].data.result[0].buy.data.quantity / 1000000000000000000;
+        const godsPrice =
+          responseArr[1].data.result[0].buy.data.quantity / 1000000000000000000;
+        console.log(
+          `CardName: ${cardName} ethPrice: ${ethPrice} godsPrice: ${godsPrice}`
+        );
+        setCardPrices((prevCards) => [
+          ...prevCards,
+          { cardName: cardName, ethPrice: ethPrice, godsPrice: godsPrice },
+        ]);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
   const handleClick = () => {
-    cards.map((item) => {
-      const { id } = item;
-      let jsonPromise = fetchEthOrder(id);
-      jsonPromise.then((result) =>
-        console.log(result.cardName + result.ethPrice)
-      );
+    if (loading) {
+      return;
+    }
+    let promise = Promise.resolve();
+    setCardPrices([]);
+
+    cards.map(function (item) {
+      promise = promise.then(function () {
+        const { id } = item;
+        axiosAll(id);
+        return new Promise(function (resolve) {
+          setTimeout(resolve, 500);
+        });
+      });
     });
   };
   useEffect(() => {
     fetchTotal();
   }, []);
+
+  useEffect(() => {
+    handleClick();
+  }, [loading]);
+
   if (loading) {
     return <h1>Loading...</h1>;
   }
   return (
     <main className="box-border p-0 m-0 bg-slate-400 ">
       <section className="pt-20 mt-4 bg-slate-700 sm:container sm:mx-auto ">
-        {cards.map((item) => {
-          const { name, id } = item;
+        {cardPrices.map((item, index) => {
+          const { cardName, ethPrice, godsPrice } = item;
           return (
-            <p className="text-cyan-200" key={id}>
-              {name}
+            <p className="text-cyan-200" key={index}>
+              {cardName}----{ethPrice}----{godsPrice}
             </p>
           );
         })}

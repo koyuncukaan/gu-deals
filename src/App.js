@@ -1,11 +1,11 @@
-import Table from "./components/Table";
+import Main from "./components/Main";
 import Navbar from "./components/Navbar";
 
 function App() {
   return (
     <>
       <Navbar />
-      <Table />
+      <Main />
     </>
   );
 }

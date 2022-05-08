@@ -22,7 +22,7 @@ const AppProvider = ({ children }) => {
       );
       const cardData = response.data.records;
       // console.log(cardData);
-      setCards(cardData.slice(0, 10));
+      setCards(cardData.slice(0, 25));
       setLoading(false);
     } catch (error) {
       console.log(error.response);
@@ -68,12 +68,17 @@ const AppProvider = ({ children }) => {
           responseArr[0].data.result[0].buy.data.quantity / 1000000000000000000;
         const godsPrice =
           responseArr[1].data.result[0].buy.data.quantity / 1000000000000000000;
-        console.log(
+        /* console.log(
           `CardName: ${cardName} ethPrice: ${ethPrice} godsPrice: ${godsPrice}`
-        );
+        ); */
         setCardPrices((prevCards) => [
           ...prevCards,
-          { cardName: cardName, ethPrice: ethPrice, godsPrice: godsPrice },
+          {
+            id: cardID,
+            cardName: cardName,
+            ethPrice: ethPrice,
+            godsPrice: godsPrice,
+          },
         ]);
       })
       .catch((error) => {

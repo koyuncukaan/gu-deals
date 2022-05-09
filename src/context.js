@@ -3,6 +3,8 @@ import axios from "axios";
 
 const url = "https://api.godsunchained.com/v0/proto";
 const immutableURL = "https://api.x.immutable.com/v1/orders?";
+const coinURL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=ethereum%2Cgods-unchained&vs_currencies=usd";
 
 const AppContext = React.createContext();
 
@@ -10,6 +12,7 @@ const AppProvider = ({ children }) => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cardPrices, setCardPrices] = useState([]);
+  const [coinPrices, setCoinPrices] = useState({});
 
   const fetchTotal = async () => {
     setLoading(true);
@@ -32,9 +35,9 @@ const AppProvider = ({ children }) => {
     if (loading) {
       return;
     }
-    await axios
+    axios
       .all([
-        axios.get(immutableURL, {
+        await axios.get(immutableURL, {
           params: {
             direction: "asc",
             include_fees: "true",
@@ -47,7 +50,7 @@ const AppProvider = ({ children }) => {
             buy_token_type: "ETH",
           },
         }),
-        axios.get(immutableURL, {
+        await axios.get(immutableURL, {
           params: {
             direction: "asc",
             include_fees: "true",
@@ -102,16 +105,36 @@ const AppProvider = ({ children }) => {
       });
     });
   };
+
+  const fetchCoins = async () => {
+    let response = await axios(coinURL);
+    let eth = response.data.ethereum.usd;
+    let gods = response.data["gods-unchained"].usd;
+    setCoinPrices({ eth, gods });
+  };
+
   useEffect(() => {
     fetchTotal();
+    fetchCoins();
   }, []);
 
   useEffect(() => {
     handleClick();
   }, [loading]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchCoins();
+      console.log(coinPrices);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <AppContext.Provider value={{ loading, cardPrices, handleClick }}>
+    <AppContext.Provider
+      value={{ loading, cardPrices, handleClick, coinPrices }}
+    >
       {children}
     </AppContext.Provider>
   );

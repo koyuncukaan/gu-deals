@@ -14,23 +14,23 @@ const AppProvider = ({ children }) => {
   const [cardPrices, setCardPrices] = useState([]);
   const [coinPrices, setCoinPrices] = useState({});
 
+  //Fetch all cards from GODS API
   const fetchTotal = async () => {
     setLoading(true);
     try {
       let response = await axios(url);
       const total = response.data.total;
-      // console.log(total);
       response = await axios(
         `https://api.godsunchained.com/v0/proto?perPage=${total}`
       );
       const cardData = response.data.records;
-      // console.log(cardData);
       setCards(cardData.slice(0, 25));
       setLoading(false);
     } catch (error) {
       console.log(error.response);
     }
   };
+  //Fetch card prices from IMMU API
   const axiosAll = async (cardID) => {
     if (loading) {
       return;
@@ -71,9 +71,9 @@ const AppProvider = ({ children }) => {
           responseArr[0].data.result[0].buy.data.quantity / 1000000000000000000;
         const godsPrice =
           responseArr[1].data.result[0].buy.data.quantity / 1000000000000000000;
-        /* console.log(
-          `CardName: ${cardName} ethPrice: ${ethPrice} godsPrice: ${godsPrice}`
-        ); */
+
+        const difference = calculateArbitrage(ethPrice, godsPrice);
+
         setCardPrices((prevCards) => [
           ...prevCards,
           {
@@ -81,6 +81,7 @@ const AppProvider = ({ children }) => {
             cardName: cardName,
             ethPrice: ethPrice,
             godsPrice: godsPrice,
+            difference: difference,
           },
         ]);
       })
@@ -106,6 +107,21 @@ const AppProvider = ({ children }) => {
     });
   };
 
+  const calculateArbitrage = (ethPrice, godsPrice) => {
+    const ethPriceDollar = coinPrices.eth * ethPrice;
+    const godsPriceDollar = coinPrices.gods * godsPrice;
+
+    if (ethPriceDollar === godsPriceDollar) {
+      return 0;
+    }
+    let priceChange =
+      (Math.abs(godsPriceDollar - ethPriceDollar) / ethPriceDollar) * 100;
+    if (godsPriceDollar < ethPriceDollar) {
+      priceChange = priceChange * -1;
+    }
+    return priceChange;
+  };
+
   const fetchCoins = async () => {
     let response = await axios(coinURL);
     let eth = response.data.ethereum.usd;
@@ -125,7 +141,6 @@ const AppProvider = ({ children }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchCoins();
-      console.log(coinPrices);
     }, 30000);
 
     return () => clearInterval(interval);

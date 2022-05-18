@@ -18,17 +18,28 @@ const columns = [
     valueGetter: ({ value }) => value && parseFloat(value),
     width: 150,
   },
+  {
+    field: "difference",
+    headerName: "Difference",
+    type: "string",
+    valueGetter: ({ value }) => value && parseFloat(value).toPrecision(3),
+    width: 150,
+  },
 ];
 
 export default function DataTable() {
   const { cardPrices } = useGlobalContext();
   return (
-    <div style={{ height: 400, width: "100%" }}>
+    <div className="w-full h-96">
       <DataGrid
         rows={cardPrices}
         columns={columns}
         pageSize={20}
         rowsPerPageOptions={[20]}
+        sx={{
+          boxShadow: 2,
+          color: "black",
+        }}
       />
     </div>
   );

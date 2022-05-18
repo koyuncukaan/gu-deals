@@ -1,10 +1,11 @@
 import { useGlobalContext } from "../context";
 import DataTable from "./DataTable";
+import Loading from "./Loading";
 
 function Table() {
   const { loading, handleClick } = useGlobalContext();
   if (loading) {
-    return <h1>Loading...</h1>;
+    return <Loading />;
   }
   return (
     <main className="box-border p-0 m-0 bg-white ">
